@@ -1,0 +1,1074 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WireFall+ | AI Blockchain Security</title>
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Libraries (Three.js, Chart.js, Lucide Icons) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <!-- Tailwind Config -->
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    colors: {
+                        deep: '#050A14',
+                        panel: '#0F172A',
+                        neonBlue: '#00F0FF',
+                        neonGreen: '#00FF41',
+                        neonAmber: '#FFB800',
+                        neonRed: '#FF3366',
+                        glass: 'rgba(15, 23, 42, 0.6)'
+                    },
+                    animation: {
+                        'pulse-fast': 'pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'spin-slow': 'spin 12s linear infinite',
+                        'float': 'float 3s ease-in-out infinite',
+                    },
+                    keyframes: {
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0)' },
+                            '50%': { transform: 'translateY(-10px)' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* Custom Styles & Effects */
+        body {
+            background-color: #050A14;
+            color: #E2E8F0;
+            overflow: hidden; /* App-like feel */
+        }
+        
+        /* Glassmorphism */
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.65);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
+        }
+
+        .glass-panel:hover {
+            border-color: rgba(0, 240, 255, 0.2);
+            box-shadow: 0 0 15px rgba(0, 240, 255, 0.1);
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0F172A; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #334155; 
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #00F0FF; 
+        }
+
+        /* Neon Glow Text */
+        .text-glow {
+            text-shadow: 0 0 10px rgba(0, 240, 255, 0.5);
+        }
+        .text-glow-red {
+            text-shadow: 0 0 10px rgba(255, 51, 102, 0.5);
+        }
+
+        /* Hexagon Grid Clip Path */
+        .hex-item {
+            clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+            transition: all 0.3s ease;
+        }
+        .hex-item:hover {
+            transform: scale(1.1);
+            z-index: 10;
+        }
+
+        /* Canvas Layers */
+        #bg-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            opacity: 0.6;
+        }
+
+        /* Utility */
+        .active-nav {
+            background: rgba(0, 240, 255, 0.1);
+            border-left: 3px solid #00F0FF;
+            color: #00F0FF;
+        }
+
+        /* Chat Animations */
+        .typing-dot {
+            animation: typing 1.4s infinite ease-in-out both;
+        }
+        .typing-dot:nth-child(1) { animation-delay: -0.32s; }
+        .typing-dot:nth-child(2) { animation-delay: -0.16s; }
+        
+        @keyframes typing {
+            0%, 80%, 100% { transform: scale(0); }
+            40% { transform: scale(1); }
+        }
+
+        /* Loader */
+        .loader-bar {
+            background: linear-gradient(90deg, #00F0FF, #00FF41);
+            background-size: 200% 200%;
+            animation: gradientMove 2s ease infinite;
+        }
+        @keyframes gradientMove {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+    </style>
+</head>
+<body class="antialiased h-screen flex flex-col md:flex-row">
+
+    <!-- 3D Background Canvas -->
+    <canvas id="bg-canvas"></canvas>
+
+    <!-- Audio Context (Hidden) -->
+    
+    <!-- Sidebar Navigation -->
+    <nav class="w-full md:w-64 glass-panel flex-shrink-0 flex flex-col z-20 md:h-full border-r border-white/5">
+        <div class="p-6 flex items-center gap-3">
+            <div class="relative w-8 h-8 flex items-center justify-center">
+                <i data-lucide="shield" class="text-neonBlue w-6 h-6"></i>
+                <div class="absolute inset-0 bg-neonBlue blur-lg opacity-40"></div>
+            </div>
+            <h1 class="text-xl font-bold tracking-wider font-mono text-white">WireFall<span class="text-neonBlue">+</span></h1>
+        </div>
+
+        <div class="flex-1 overflow-y-auto py-4 space-y-1">
+            <button onclick="switchTab('dashboard')" id="nav-dashboard" class="active-nav w-full text-left px-6 py-3 hover:bg-white/5 transition-colors flex items-center gap-3 text-sm font-medium text-gray-300">
+                <i data-lucide="layout-dashboard" class="w-4 h-4"></i> Dashboard
+            </button>
+            <button onclick="switchTab('loop')" id="nav-loop" class="w-full text-left px-6 py-3 hover:bg-white/5 transition-colors flex items-center gap-3 text-sm font-medium text-gray-300">
+                <i data-lucide="refresh-cw" class="w-4 h-4"></i> Red-Blue Loop
+            </button>
+            <button onclick="switchTab('intel')" id="nav-intel" class="w-full text-left px-6 py-3 hover:bg-white/5 transition-colors flex items-center gap-3 text-sm font-medium text-gray-300">
+                <i data-lucide="database" class="w-4 h-4"></i> Threat Intel
+            </button>
+            <button onclick="switchTab('copilot')" id="nav-copilot" class="w-full text-left px-6 py-3 hover:bg-white/5 transition-colors flex items-center gap-3 text-sm font-medium text-gray-300">
+                <i data-lucide="bot" class="w-4 h-4"></i> Security Copilot
+            </button>
+            <button onclick="switchTab('agents')" id="nav-agents" class="w-full text-left px-6 py-3 hover:bg-white/5 transition-colors flex items-center gap-3 text-sm font-medium text-gray-300">
+                <i data-lucide="cpu" class="w-4 h-4"></i> Agents
+            </button>
+            <button onclick="switchTab('analytics')" id="nav-analytics" class="w-full text-left px-6 py-3 hover:bg-white/5 transition-colors flex items-center gap-3 text-sm font-medium text-gray-300">
+                <i data-lucide="bar-chart-2" class="w-4 h-4"></i> Analytics
+            </button>
+        </div>
+
+        <div class="p-4 border-t border-white/5">
+            <div class="flex items-center gap-3 p-2 rounded-lg bg-white/5 border border-white/5">
+                <div class="w-2 h-2 rounded-full bg-neonGreen animate-pulse"></div>
+                <div class="text-xs">
+                    <p class="text-gray-400">System Status</p>
+                    <p class="text-neonGreen font-mono">OPTIMAL</p>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content Area -->
+    <main class="flex-1 relative overflow-hidden flex flex-col z-10">
+        
+        <!-- Header -->
+        <header class="h-16 glass-panel border-b border-white/5 flex items-center justify-between px-6">
+            <div class="flex items-center gap-4">
+                <span class="text-xs font-mono text-neonBlue border border-neonBlue/30 px-2 py-1 rounded">v2.4.0-stable</span>
+                <span id="current-time" class="text-sm text-gray-400 font-mono">00:00:00 UTC</span>
+            </div>
+            <div class="flex items-center gap-4">
+                <div class="hidden md:flex items-center gap-2 text-sm text-gray-400">
+                    <i data-lucide="zap" class="w-4 h-4 text-neonAmber"></i>
+                    <span>Threat Level: <span class="text-neonAmber font-bold">ELEVATED</span></span>
+                </div>
+                <button class="relative p-2 rounded-full hover:bg-white/10 transition-colors" onclick="toggleSound()">
+                    <i data-lucide="volume-2" class="w-5 h-5 text-gray-300"></i>
+                </button>
+                <div class="w-8 h-8 rounded-full bg-gradient-to-tr from-neonBlue to-blue-600 flex items-center justify-center text-xs font-bold text-white shadow-lg shadow-neonBlue/20">
+                    OP
+                </div>
+            </div>
+        </header>
+
+        <!-- Content Container -->
+        <div id="content-area" class="flex-1 overflow-y-auto overflow-x-hidden p-6 relative scroll-smooth">
+            
+            <!-- DASHBOARD VIEW -->
+            <div id="view-dashboard" class="space-y-6 animate-fade-in">
+                <!-- Hero Stats -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div class="glass-panel p-5 rounded-xl relative overflow-hidden group">
+                        <div class="absolute top-0 right-0 p-3 opacity-20 group-hover:opacity-40 transition-opacity">
+                            <i data-lucide="shield-alert" class="w-12 h-12 text-neonRed"></i>
+                        </div>
+                        <p class="text-sm text-gray-400 font-medium">Threats Blocked</p>
+                        <h3 class="text-3xl font-bold text-white mt-1 font-mono" id="threat-counter">1,248</h3>
+                        <div class="mt-2 flex items-center gap-2 text-xs text-neonGreen">
+                            <i data-lucide="arrow-up" class="w-3 h-3"></i> 12% vs last hour
+                        </div>
+                        <div class="absolute bottom-0 left-0 h-1 bg-neonRed loader-bar w-full"></div>
+                    </div>
+
+                    <div class="glass-panel p-5 rounded-xl relative overflow-hidden group">
+                        <div class="absolute top-0 right-0 p-3 opacity-20 group-hover:opacity-40 transition-opacity">
+                            <i data-lucide="cpu" class="w-12 h-12 text-neonBlue"></i>
+                        </div>
+                        <p class="text-sm text-gray-400 font-medium">Model Confidence</p>
+                        <h3 class="text-3xl font-bold text-white mt-1 font-mono">99.8%</h3>
+                        <div class="mt-2 flex items-center gap-2 text-xs text-neonBlue">
+                            <i data-lucide="activity" class="w-3 h-3"></i> DistilBERT Active
+                        </div>
+                    </div>
+
+                    <div class="glass-panel p-5 rounded-xl relative overflow-hidden group">
+                        <div class="absolute top-0 right-0 p-3 opacity-20 group-hover:opacity-40 transition-opacity">
+                            <i data-lucide="box" class="w-12 h-12 text-neonAmber"></i>
+                        </div>
+                        <p class="text-sm text-gray-400 font-medium">Active Agents</p>
+                        <h3 class="text-3xl font-bold text-white mt-1 font-mono">7/7</h3>
+                        <div class="mt-2 flex items-center gap-2 text-xs text-neonAmber">
+                            <span class="w-2 h-2 rounded-full bg-neonGreen animate-pulse"></span> All Systems Go
+                        </div>
+                    </div>
+
+                    <div class="glass-panel p-5 rounded-xl relative overflow-hidden group">
+                        <div class="absolute top-0 right-0 p-3 opacity-20 group-hover:opacity-40 transition-opacity">
+                            <i data-lucide="link" class="w-12 h-12 text-neonGreen"></i>
+                        </div>
+                        <p class="text-sm text-gray-400 font-medium">Chain Reputation</p>
+                        <h3 class="text-3xl font-bold text-white mt-1 font-mono">A+</h3>
+                        <div class="mt-2 flex items-center gap-2 text-xs text-neonGreen">
+                            <i data-lucide="check-circle" class="w-3 h-3"></i> 0 False Positives
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Main Dashboard Grid -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    
+                    <!-- Left: Activity Feed -->
+                    <div class="glass-panel rounded-xl p-0 lg:col-span-2 flex flex-col h-[500px]">
+                        <div class="p-4 border-b border-white/5 flex justify-between items-center">
+                            <h3 class="font-bold text-white flex items-center gap-2">
+                                <i data-lucide="activity" class="w-4 h-4 text-neonBlue"></i> Live Activity Feed
+                            </h3>
+                            <button class="text-xs bg-neonBlue/10 text-neonBlue px-2 py-1 rounded hover:bg-neonBlue/20 transition">View Log</button>
+                        </div>
+                        <div class="flex-1 overflow-y-auto p-4 space-y-3" id="activity-feed">
+                            <!-- Items injected by JS -->
+                        </div>
+                    </div>
+
+                    <!-- Right: Quick Actions -->
+                    <div class="space-y-6">
+                        <div class="glass-panel rounded-xl p-5">
+                            <h3 class="font-bold text-white mb-4">Quick Actions</h3>
+                            <div class="grid grid-cols-2 gap-3">
+                                <button onclick="simulateAttack()" class="p-3 rounded-lg bg-red-500/10 border border-red-500/30 hover:bg-red-500/20 transition-all text-center group">
+                                    <i data-lucide="sword" class="w-6 h-6 text-neonRed mx-auto mb-2 group-hover:scale-110 transition-transform"></i>
+                                    <span class="block text-xs font-mono text-gray-300">Simulate Attack</span>
+                                </button>
+                                <button onclick="showToast('Training LoRA model...', 'info')" class="p-3 rounded-lg bg-neonBlue/10 border border-neonBlue/30 hover:bg-neonBlue/20 transition-all text-center group">
+                                    <i data-lucide="brain" class="w-6 h-6 text-neonBlue mx-auto mb-2 group-hover:scale-110 transition-transform"></i>
+                                    <span class="block text-xs font-mono text-gray-300">Train Model</span>
+                                </button>
+                                <button onclick="showToast('Report Generated', 'success')" class="p-3 rounded-lg bg-neonGreen/10 border border-neonGreen/30 hover:bg-neonGreen/20 transition-all text-center group">
+                                    <i data-lucide="file-text" class="w-6 h-6 text-neonGreen mx-auto mb-2 group-hover:scale-110 transition-transform"></i>
+                                    <span class="block text-xs font-mono text-gray-300">Export Report</span>
+                                </button>
+                                <button onclick="switchTab('intel')" class="p-3 rounded-lg bg-neonAmber/10 border border-neonAmber/30 hover:bg-neonAmber/20 transition-all text-center group">
+                                    <i data-lucide="globe" class="w-6 h-6 text-neonAmber mx-auto mb-2 group-hover:scale-110 transition-transform"></i>
+                                    <span class="block text-xs font-mono text-gray-300">Global Intel</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Mini Chart -->
+                        <div class="glass-panel rounded-xl p-5">
+                            <h3 class="font-bold text-white mb-4 text-sm">Traffic Analysis (24h)</h3>
+                            <div class="h-32">
+                                <canvas id="miniTrafficChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- RED-BLUE LOOP VIEW -->
+            <div id="view-loop" class="hidden h-full flex flex-col lg:flex-row gap-6">
+                <!-- 3D Visualization Area -->
+                <div class="glass-panel rounded-xl flex-1 relative overflow-hidden min-h-[400px]">
+                    <div class="absolute top-4 left-4 z-10">
+                        <h3 class="text-lg font-bold text-white">Self-Healing Cycle Visualizer</h3>
+                        <p class="text-xs text-gray-400">Real-time feedback loop between Red Team and Blue Team agents</p>
+                    </div>
+                    <!-- Specific Canvas for this view -->
+                    <div id="loop-canvas-container" class="w-full h-full cursor-move"></div>
+                    
+                    <!-- Floating Labels overlay -->
+                    <div class="absolute top-1/4 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center pointer-events-none">
+                        <div class="bg-black/50 backdrop-blur px-3 py-1 rounded border border-neonRed/50 text-neonRed text-xs font-mono">RED TEAM (ATTACK)</div>
+                    </div>
+                    <div class="absolute top-1/2 right-8 transform -translate-y-1/2 text-center pointer-events-none">
+                        <div class="bg-black/50 backdrop-blur px-3 py-1 rounded border border-neonBlue/50 text-neonBlue text-xs font-mono">BLUE TEAM (RULE)</div>
+                    </div>
+                </div>
+
+                <!-- Loop Controls & Stats -->
+                <div class="glass-panel rounded-xl w-full lg:w-80 p-0 flex flex-col">
+                    <div class="p-4 border-b border-white/10">
+                        <h4 class="font-bold text-white text-sm">Loop Metrics</h4>
+                    </div>
+                    <div class="p-4 flex-1 space-y-6">
+                        <div>
+                            <div class="flex justify-between text-xs mb-1">
+                                <span class="text-gray-400">Patch Velocity</span>
+                                <span class="text-neonGreen font-mono">12ms</span>
+                            </div>
+                            <div class="h-1 bg-gray-700 rounded-full overflow-hidden">
+                                <div class="h-full bg-neonGreen w-[95%]"></div>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="flex justify-between text-xs mb-1">
+                                <span class="text-gray-400">False Negative Rate</span>
+                                <span class="text-neonRed font-mono">0.01%</span>
+                            </div>
+                            <div class="h-1 bg-gray-700 rounded-full overflow-hidden">
+                                <div class="h-full bg-neonRed w-[1%]"></div>
+                            </div>
+                        </div>
+
+                        <div class="bg-black/30 rounded-lg p-3 border border-white/5">
+                            <div class="flex items-center gap-2 mb-2">
+                                <i data-lucide="terminal" class="w-4 h-4 text-gray-400"></i>
+                                <span class="text-xs font-mono text-gray-400">Latest Rule Generated</span>
+                            </div>
+                            <code class="text-xs text-neonGreen block font-mono break-all">
+                                SecRule ARGS "@rx (?i)union.*select" "id:1001,msg:'SQLi Detected'"
+                            </code>
+                        </div>
+
+                        <button onclick="simulateAttack()" class="w-full py-2 bg-neonRed/10 border border-neonRed/50 text-neonRed hover:bg-neonRed/20 transition rounded text-sm font-bold">
+                            TRIGGER ATTACK VECTOR
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- THREAT INTEL VIEW -->
+            <div id="view-intel" class="hidden h-full flex flex-col">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-bold text-white">Threat Intelligence <span class="text-neonBlue">Hub</span></h2>
+                    <div class="relative">
+                        <i data-lucide="search" class="absolute left-3 top-2.5 w-4 h-4 text-gray-400"></i>
+                        <input type="text" placeholder="Search hashes..." class="bg-black/40 border border-white/10 rounded-full py-2 pl-10 pr-4 text-sm text-white focus:outline-none focus:border-neonBlue w-64">
+                    </div>
+                </div>
+
+                <div class="glass-panel p-6 rounded-xl mb-6">
+                    <h3 class="text-sm font-bold text-gray-300 mb-4">Correlation Matrix (Attack Type vs Origin)</h3>
+                    <div class="h-64 w-full">
+                        <canvas id="correlationChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="flex-1 glass-panel p-6 rounded-xl overflow-hidden flex flex-col">
+                    <h3 class="text-sm font-bold text-gray-300 mb-4">Known Threat Hashes (Blockchain)</h3>
+                    <div class="flex-1 grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 content-start" id="hex-grid">
+                        <!-- Hex items injected by JS -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- COPILOT CHAT VIEW -->
+            <div id="view-copilot" class="hidden h-full flex flex-col">
+                <div class="flex-1 glass-panel rounded-xl flex flex-col overflow-hidden relative">
+                    <div class="p-4 border-b border-white/5 bg-black/20 flex justify-between items-center">
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 rounded-full bg-gradient-to-br from-neonBlue to-purple-600 flex items-center justify-center">
+                                <i data-lucide="bot" class="w-5 h-5 text-white"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-bold text-white text-sm">Security Copilot</h3>
+                                <p class="text-xs text-neonGreen flex items-center gap-1">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-neonGreen"></span> Online
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex-1 overflow-y-auto p-6 space-y-4" id="chat-container">
+                        <!-- Initial Bot Message -->
+                        <div class="flex gap-3">
+                            <div class="w-8 h-8 rounded-full bg-gradient-to-br from-neonBlue to-purple-600 flex-shrink-0 flex items-center justify-center">
+                                <i data-lucide="bot" class="w-5 h-5 text-white"></i>
+                            </div>
+                            <div class="bg-white/10 rounded-2xl rounded-tl-none p-3 text-sm text-gray-200 max-w-[80%]">
+                                Greetings, Operator. I am your AI Security Assistant. I can analyze logs, generate WAF rules, or explain anomaly detection results. How can I assist?
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="p-4 bg-black/40 border-t border-white/5">
+                        <div class="flex gap-2 mb-2 overflow-x-auto">
+                            <button onclick="askCopilot('Why was request #12847 blocked?')" class="whitespace-nowrap px-3 py-1 rounded-full bg-white/5 text-xs text-gray-400 hover:text-white hover:bg-white/10 border border-white/5 transition">Why was request #12847 blocked?</button>
+                            <button onclick="askCopilot('Show me the latest anomalies')" class="whitespace-nowrap px-3 py-1 rounded-full bg-white/5 text-xs text-gray-400 hover:text-white hover:bg-white/10 border border-white/5 transition">Show me the latest anomalies</button>
+                            <button onclick="askCopilot('Generate report for CISO')" class="whitespace-nowrap px-3 py-1 rounded-full bg-white/5 text-xs text-gray-400 hover:text-white hover:bg-white/10 border border-white/5 transition">Generate report for CISO</button>
+                        </div>
+                        <div class="flex gap-2">
+                            <input type="text" id="chat-input" placeholder="Ask about security events..." class="flex-1 bg-deep border border-white/10 rounded-lg px-4 py-2 text-sm text-white focus:outline-none focus:border-neonBlue transition-colors" onkeypress="if(event.key === 'Enter') sendChat()">
+                            <button onclick="sendChat()" class="bg-neonBlue hover:bg-cyan-400 text-black font-bold rounded-lg px-4 py-2 transition-colors">
+                                <i data-lucide="send" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- AGENTS VIEW -->
+            <div id="view-agents" class="hidden h-full">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4" id="agent-grid">
+                    <!-- Agent Cards Injected by JS -->
+                </div>
+            </div>
+
+            <!-- ANALYTICS VIEW -->
+            <div id="view-analytics" class="hidden h-full space-y-6">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div class="glass-panel p-6 rounded-xl">
+                        <h3 class="font-bold text-white mb-4">Threat Trends (30 Days)</h3>
+                        <div class="h-64">
+                            <canvas id="mainTrendChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="glass-panel p-6 rounded-xl">
+                        <h3 class="font-bold text-white mb-4">Attack Vector Distribution</h3>
+                        <div class="h-64 flex justify-center">
+                            <canvas id="vectorDoughnutChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Toast Container -->
+    <div id="toast-container" class="fixed bottom-6 right-6 z-50 space-y-3 pointer-events-none"></div>
+
+    <!-- Scripts -->
+    <script>
+        // --- 1. Audio Controller (Web Audio API - No external assets) ---
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        
+        const playSound = (type) => {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            const now = audioCtx.currentTime;
+            
+            if (type === 'hover') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(400, now);
+                osc.frequency.exponentialRampToValueAtTime(600, now + 0.1);
+                gain.gain.setValueAtTime(0.05, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
+                osc.start(now);
+                osc.stop(now + 0.1);
+            } else if (type === 'click') {
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(800, now);
+                osc.frequency.exponentialRampToValueAtTime(300, now + 0.1);
+                gain.gain.setValueAtTime(0.1, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
+                osc.start(now);
+                osc.stop(now + 0.1);
+            } else if (type === 'alert') {
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(200, now);
+                osc.frequency.linearRampToValueAtTime(100, now + 0.3);
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.linearRampToValueAtTime(0.001, now + 0.3);
+                osc.start(now);
+                osc.stop(now + 0.3);
+            } else if (type === 'success') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(600, now);
+                osc.frequency.setValueAtTime(800, now + 0.1);
+                gain.gain.setValueAtTime(0.1, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+                osc.start(now);
+                osc.stop(now + 0.3);
+            }
+        };
+
+        let soundEnabled = true;
+        function toggleSound() {
+            soundEnabled = !soundEnabled;
+            const icon = document.querySelector('button[onclick="toggleSound()"] i');
+            icon.setAttribute('data-lucide', soundEnabled ? 'volume-2' : 'volume-x');
+            lucide.createIcons();
+        }
+
+        // --- 2. Mock Data & State ---
+        const threats = [
+            { type: 'SQL Injection', severity: 'High', ip: '192.168.1.45', msg: 'Union based select detected' },
+            { type: 'XSS Attempt', severity: 'Medium', ip: '10.0.0.12', msg: 'Script tag in query param' },
+            { type: 'Brute Force', severity: 'Low', ip: '172.16.0.5', msg: 'Repeated failed login attempts' },
+            { type: 'DDoS', severity: 'Critical', ip: '45.33.22.11', msg: 'SYN Flood from botnet' },
+            { type: 'RCE', severity: 'High', ip: '203.0.113.8', msg: 'Command injection pattern' }
+        ];
+
+        const agents = [
+            { name: 'WAF-Sentinel', type: 'Firewall', status: 'Active', load: 45 },
+            { name: 'EDR-Valkyrie', type: 'Endpoint', status: 'Active', load: 32 },
+            { name: 'DistilBERT', type: 'AI Analysis', status: 'Training', load: 98 },
+            { name: 'Chain-Link', type: 'Blockchain', status: 'Active', load: 12 },
+            { name: 'Red-Agent-1', type: 'Red Team', status: 'Idle', load: 5 },
+            { name: 'Blue-Agent-1', type: 'Blue Team', status: 'Active', load: 67 },
+            { name: 'Forensics', type: 'Analysis', status: 'Idle', load: 0 },
+        ];
+
+        // --- 3. UI Logic ---
+        function switchTab(tabId) {
+            playSound('click');
+            // Update Nav
+            document.querySelectorAll('nav button').forEach(b => {
+                b.classList.remove('active-nav', 'text-neonBlue', 'border-l-3');
+                b.classList.add('text-gray-300');
+            });
+            const activeBtn = document.getElementById(`nav-${tabId}`);
+            activeBtn.classList.add('active-nav');
+            activeBtn.classList.remove('text-gray-300');
+
+            // Hide all views
+            document.querySelectorAll('[id^="view-"]').forEach(v => v.classList.add('hidden'));
+            
+            // Show selected view
+            const selectedView = document.getElementById(`view-${tabId}`);
+            selectedView.classList.remove('hidden');
+            selectedView.classList.add('animate-fade-in');
+
+            // Handle 3D Scene Visibility/Resizing
+            if (tabId === 'dashboard') {
+                document.getElementById('bg-canvas').style.display = 'block';
+                resizeThreeJS();
+            } else if (tabId === 'loop') {
+                document.getElementById('bg-canvas').style.display = 'none'; // Hide BG for performance
+                initLoopScene();
+                resizeLoopScene();
+            } else {
+                document.getElementById('bg-canvas').style.display = 'block';
+                resizeThreeJS();
+            }
+        }
+
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            
+            let colors = type === 'alert' ? 'border-neonRed text-white' : 
+                         type === 'success' ? 'border-neonGreen text-white' : 
+                         'border-neonBlue text-white';
+            
+            toast.className = `glass-panel px-4 py-3 rounded-lg border-l-4 shadow-lg flex items-center gap-3 transform translate-x-full transition-transform duration-300 ${colors}`;
+            toast.innerHTML = `
+                <i data-lucide="${type === 'alert' ? 'alert-triangle' : type === 'success' ? 'check-circle' : 'info'}" class="w-4 h-4"></i>
+                <span class="text-sm font-medium">${message}</span>
+            `;
+            
+            container.appendChild(toast);
+            lucide.createIcons();
+            
+            // Animate in
+            requestAnimationFrame(() => {
+                toast.classList.remove('translate-x-full');
+            });
+
+            playSound(type === 'alert' ? 'alert' : 'success');
+
+            setTimeout(() => {
+                toast.classList.add('translate-x-full');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        function addLogEntry(eventData) {
+            const feed = document.getElementById('activity-feed');
+            const item = document.createElement('div');
+            const colorClass = eventData.severity === 'Critical' ? 'border-neonRed bg-red-500/10' : 
+                               eventData.severity === 'High' ? 'border-neonAmber bg-amber-500/10' : 
+                               'border-neonBlue bg-blue-500/10';
+            
+            item.className = `flex gap-3 items-start p-3 rounded border-l-2 ${colorClass} hover:bg-white/5 transition cursor-pointer`;
+            item.innerHTML = `
+                <div class="text-xs font-mono text-gray-500 pt-1">${new Date().toLocaleTimeString()}</div>
+                <div class="flex-1">
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm font-bold text-white">${eventData.type}</span>
+                        <span class="text-xs px-2 py-0.5 rounded border border-white/20 text-gray-300">${eventData.ip}</span>
+                    </div>
+                    <p class="text-xs text-gray-400 mt-1 font-mono">${eventData.msg}</p>
+                </div>
+            `;
+            feed.insertBefore(item, feed.firstChild);
+            // Keep only last 20
+            if(feed.children.length > 20) feed.lastChild.remove();
+        }
+
+        function simulateAttack() {
+            playSound('alert');
+            const randomThreat = threats[Math.floor(Math.random() * threats.length)];
+            addLogEntry(randomThreat);
+            
+            // Update Counter
+            const counter = document.getElementById('threat-counter');
+            let count = parseInt(counter.innerText.replace(',',''));
+            counter.innerText = (count + 1).toLocaleString();
+            
+            showToast(`Blocked: ${randomThreat.type} from ${randomThreat.ip}`, 'alert');
+
+            // Flash screen red briefly
+            const flash = document.createElement('div');
+            flash.className = 'fixed inset-0 bg-red-500/10 pointer-events-none z-50 transition-opacity duration-500';
+            document.body.appendChild(flash);
+            setTimeout(() => flash.classList.add('opacity-0'), 50);
+            setTimeout(() => flash.remove(), 550);
+        }
+
+        function initAgentGrid() {
+            const grid = document.getElementById('agent-grid');
+            agents.forEach(agent => {
+                const statusColor = agent.status === 'Active' ? 'bg-neonGreen' : 
+                                    agent.status === 'Training' ? 'bg-neonAmber' : 'bg-gray-500';
+                
+                const card = document.createElement('div');
+                card.className = 'glass-panel p-5 rounded-xl flex flex-col gap-4 hover:border-neonBlue/50 transition-all';
+                card.innerHTML = `
+                    <div class="flex justify-between items-start">
+                        <div class="p-2 bg-white/5 rounded-lg text-neonBlue">
+                            <i data-lucide="cpu" class="w-6 h-6"></i>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <div class="w-2 h-2 rounded-full ${statusColor} animate-pulse"></div>
+                            <span class="text-xs font-mono text-gray-400">${agent.status}</span>
+                        </div>
+                    </div>
+                    <div>
+                        <h4 class="font-bold text-white">${agent.name}</h4>
+                        <p class="text-xs text-gray-400">${agent.type} Agent</p>
+                    </div>
+                    <div>
+                        <div class="flex justify-between text-xs mb-1">
+                            <span class="text-gray-500">Compute Load</span>
+                            <span class="text-white font-mono">${agent.load}%</span>
+                        </div>
+                        <div class="h-1 w-full bg-gray-700 rounded-full overflow-hidden">
+                            <div class="h-full bg-neonBlue" style="width: ${agent.load}%"></div>
+                        </div>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        function initHexGrid() {
+            const grid = document.getElementById('hex-grid');
+            const hashes = [];
+            for(let i=0; i<30; i++) {
+                hashes.push(`0x${Math.random().toString(16).substr(2, 8)}...`);
+            }
+            
+            hashes.forEach(hash => {
+                const el = document.createElement('div');
+                const severity = Math.random() > 0.8 ? 'bg-neonRed' : Math.random() > 0.5 ? 'bg-neonAmber' : 'bg-neonGreen';
+                
+                el.className = `hex-item w-24 h-28 bg-gray-800 border ${severity} border-opacity-30 flex flex-col items-center justify-center cursor-pointer hover:bg-gray-700`;
+                el.innerHTML = `
+                    <i data-lucide="shield" class="w-6 h-6 mb-2 text-white opacity-80"></i>
+                    <span class="text-[10px] font-mono text-gray-400 text-center leading-tight px-2">${hash}</span>
+                `;
+                grid.appendChild(el);
+            });
+        }
+
+        // --- 4. Chat Logic ---
+        function sendChat() {
+            const input = document.getElementById('chat-input');
+            const text = input.value.trim();
+            if(!text) return;
+            
+            addChatMessage(text, 'user');
+            input.value = '';
+            
+            // Simulate typing delay
+            const container = document.getElementById('chat-container');
+            const typingId = 'typing-' + Date.now();
+            const typingEl = document.createElement('div');
+            typingEl.id = typingId;
+            typingEl.className = 'flex gap-3';
+            typingEl.innerHTML = `
+                <div class="w-8 h-8 rounded-full bg-gradient-to-br from-neonBlue to-purple-600 flex-shrink-0 flex items-center justify-center">
+                    <i data-lucide="bot" class="w-5 h-5 text-white"></i>
+                </div>
+                <div class="bg-white/10 rounded-2xl rounded-tl-none p-4 flex gap-1 items-center">
+                    <div class="w-2 h-2 bg-gray-400 rounded-full typing-dot"></div>
+                    <div class="w-2 h-2 bg-gray-400 rounded-full typing-dot"></div>
+                    <div class="w-2 h-2 bg-gray-400 rounded-full typing-dot"></div>
+                </div>
+            `;
+            container.appendChild(typingEl);
+            lucide.createIcons();
+            container.scrollTop = container.scrollHeight;
+
+            setTimeout(() => {
+                document.getElementById(typingId).remove();
+                const responses = [
+                    "Analyzing log patterns... Found anomaly signature ID #9921.",
+                    "I have deployed a new WAF rule to block that specific IP range.",
+                    "Based on the traffic spike, I recommend scaling the EDR cluster.",
+                    "That request was blocked due to a SQL injection signature.",
+                    "I've updated the blockchain ledger with this new threat hash."
+                ];
+                addChatMessage(responses[Math.floor(Math.random() * responses.length)], 'bot');
+            }, 1500);
+        }
+
+        function askCopilot(q) {
+            document.getElementById('chat-input').value = q;
+            sendChat();
+        }
+
+        function addChatMessage(text, sender) {
+            const container = document.getElementById('chat-container');
+            const div = document.createElement('div');
+            div.className = `flex gap-3 ${sender === 'user' ? 'flex-row-reverse' : ''}`;
+            
+            const avatar = sender === 'user' 
+                ? `<div class="w-8 h-8 rounded-full bg-gradient-to-br from-gray-600 to-gray-800 flex-shrink-0 flex items-center justify-center text-xs font-bold text-white border border-white/10">OP</div>`
+                : `<div class="w-8 h-8 rounded-full bg-gradient-to-br from-neonBlue to-purple-600 flex-shrink-0 flex items-center justify-center"><i data-lucide="bot" class="w-5 h-5 text-white"></i></div>`;
+            
+            const bubbleClass = sender === 'user' 
+                ? 'bg-neonBlue/20 text-white rounded-tr-none' 
+                : 'bg-white/10 text-gray-200 rounded-tl-none';
+
+            div.innerHTML = `
+                ${avatar}
+                <div class="${bubbleClass} rounded-2xl p-3 text-sm max-w-[80%]">${text}</div>
+            `;
+            container.appendChild(div);
+            lucide.createIcons();
+            container.scrollTop = container.scrollHeight;
+            if(sender === 'bot') playSound('success');
+        }
+
+        // --- 5. Three.js Implementation ---
+        
+        // --- A. Background Particles (Global) ---
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('bg-canvas'), alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        
+        // Particles
+        const particlesGeometry = new THREE.BufferGeometry();
+        const particlesCount = 700;
+        const posArray = new Float32Array(particlesCount * 3);
+        
+        for(let i = 0; i < particlesCount * 3; i++) {
+            posArray[i] = (Math.random() - 0.5) * 20; // Spread
+        }
+        
+        particlesGeometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+        const material = new THREE.PointsMaterial({
+            size: 0.02,
+            color: 0x00F0FF,
+            transparent: true,
+            opacity: 0.8
+        });
+        const particlesMesh = new THREE.Points(particlesGeometry, material);
+        scene.add(particlesMesh);
+
+        // Connecting Lines (Network effect)
+        const linesMaterial = new THREE.LineBasicMaterial({ color: 0x00F0FF, transparent: true, opacity: 0.15 });
+        const linesGeometry = new THREE.BufferGeometry();
+        const linesMesh = new THREE.LineSegments(linesGeometry, linesMaterial);
+        scene.add(linesMesh);
+
+        camera.position.z = 5;
+
+        function animateBg() {
+            requestAnimationFrame(animateBg);
+            particlesMesh.rotation.y += 0.001;
+            particlesMesh.rotation.x += 0.0005;
+            renderer.render(scene, camera);
+        }
+        animateBg();
+
+        function resizeThreeJS() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+        window.addEventListener('resize', resizeThreeJS);
+
+        // --- B. Loop Visualizer (Specific) ---
+        let loopScene, loopCamera, loopRenderer, loopAnimationId;
+        
+        function initLoopScene() {
+            if (loopRenderer) return; // Already initialized
+
+            const container = document.getElementById('loop-canvas-container');
+            loopScene = new THREE.Scene();
+            loopCamera = new THREE.PerspectiveCamera(50, container.offsetWidth / container.offsetHeight, 0.1, 100);
+            loopRenderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+            loopRenderer.setSize(container.offsetWidth, container.offsetHeight);
+            container.appendChild(loopRenderer.domElement);
+
+            // Central Sphere (The Core)
+            const coreGeo = new THREE.IcosahedronGeometry(1.5, 1);
+            const coreMat = new THREE.MeshBasicMaterial({ color: 0x00F0FF, wireframe: true, transparent: true, opacity: 0.3 });
+            const core = new THREE.Mesh(coreGeo, coreMat);
+            loopScene.add(core);
+
+            // Orbiting Nodes (Agents)
+            const nodes = [];
+            const nodeGeo = new THREE.SphereGeometry(0.2, 16, 16);
+            const colors = [0xFF3366, 0x00F0FF, 0x00FF41, 0xFFB800]; // Red, Blue, Green, Amber
+
+            for(let i=0; i<4; i++) {
+                const mat = new THREE.MeshBasicMaterial({ color: colors[i] });
+                const mesh = new THREE.Mesh(nodeGeo, mat);
+                const angle = (i / 4) * Math.PI * 2;
+                mesh.userData = { angle: angle, radius: 3.5, speed: 0.02 * (i%2===0?1:-1) };
+                mesh.position.x = Math.cos(angle) * mesh.userData.radius;
+                mesh.position.z = Math.sin(angle) * mesh.userData.radius;
+                loopScene.add(mesh);
+                nodes.push(mesh);
+
+                // Ring path
+                const pathGeo = new THREE.RingGeometry(mesh.userData.radius - 0.02, mesh.userData.radius + 0.02, 64);
+                const pathMat = new THREE.MeshBasicMaterial({ color: 0xffffff, side: THREE.DoubleSide, transparent: true, opacity: 0.1 });
+                const path = new THREE.Mesh(pathGeo, pathMat);
+                path.rotation.x = Math.PI / 2;
+                loopScene.add(path);
+            }
+
+            // Animate Loop
+            function animateLoop() {
+                loopAnimationId = requestAnimationFrame(animateLoop);
+                
+                core.rotation.y -= 0.005;
+                core.rotation.z += 0.002;
+
+                nodes.forEach(node => {
+                    node.userData.angle += node.userData.speed;
+                    node.position.x = Math.cos(node.userData.angle) * node.userData.radius;
+                    node.position.z = Math.sin(node.userData.angle) * node.userData.radius;
+                });
+
+                loopRenderer.render(loopScene, loopCamera);
+            }
+            animateLoop();
+
+            // Interactive rotation
+            let isDragging = false;
+            let previousMousePosition = { x: 0, y: 0 };
+
+            container.addEventListener('mousedown', () => isDragging = true);
+            container.addEventListener('mouseup', () => isDragging = false);
+            container.addEventListener('mousemove', (e) => {
+                if (isDragging) {
+                    const deltaMove = {
+                        x: e.offsetX - previousMousePosition.x,
+                        y: e.offsetY - previousMousePosition.y
+                    };
+                    loopScene.rotation.y += deltaMove.x * 0.01;
+                    loopScene.rotation.x += deltaMove.y * 0.01;
+                }
+                previousMousePosition = { x: e.offsetX, y: e.offsetY };
+            });
+        }
+
+        function resizeLoopScene() {
+            if (!loopRenderer) return;
+            const container = document.getElementById('loop-canvas-container');
+            if(container) {
+                loopCamera.aspect = container.offsetWidth / container.offsetHeight;
+                loopCamera.updateProjectionMatrix();
+                loopRenderer.setSize(container.offsetWidth, container.offsetHeight);
+            }
+        }
+
+        // --- 6. Chart.js Initialization ---
+        function initCharts() {
+            // Mini Traffic Chart
+            const ctxMini = document.getElementById('miniTrafficChart').getContext('2d');
+            new Chart(ctxMini, {
+                type: 'line',
+                data: {
+                    labels: ['00', '04', '08', '12', '16', '20'],
+                    datasets: [{
+                        data: [12, 19, 15, 25, 22, 30],
+                        borderColor: '#00F0FF',
+                        backgroundColor: 'rgba(0, 240, 255, 0.1)',
+                        fill: true,
+                        tension: 0.4,
+                        borderWidth: 2,
+                        pointRadius: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: { x: { display: false }, y: { display: false } }
+                }
+            });
+
+            // Correlation Heatmap (Scatter)
+            const ctxHeat = document.getElementById('correlationChart').getContext('2d');
+            new Chart(ctxHeat, {
+                type: 'scatter',
+                data: {
+                    datasets: [{
+                        label: 'Attacks',
+                        data: Array.from({length: 50}, () => ({x: Math.random()*100, y: Math.random()*100})),
+                        backgroundColor: '#FF3366'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: { title: {display: true, text: 'Time of Day', color: '#64748B'}, grid: {color: 'rgba(255,255,255,0.1)'}, ticks: {color: '#94a3b8'} },
+                        y: { title: {display: true, text: 'Severity Score', color: '#64748B'}, grid: {color: 'rgba(255,255,255,0.1)'}, ticks: {color: '#94a3b8'} }
+                    },
+                    plugins: { legend: { display: false } }
+                }
+            });
+
+            // Main Trend Chart
+            const ctxTrend = document.getElementById('mainTrendChart').getContext('2d');
+            new Chart(ctxTrend, {
+                type: 'bar',
+                data: {
+                    labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+                    datasets: [{
+                        label: 'Blocked Threats',
+                        data: [65, 59, 80, 81, 56, 40, 35],
+                        backgroundColor: '#00F0FF',
+                        borderRadius: 4
+                    }, {
+                        label: 'Escalated',
+                        data: [5, 2, 10, 5, 2, 1, 0],
+                        backgroundColor: '#FF3366',
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: { grid: { display: false }, ticks: { color: '#94a3b8' } },
+                        y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8' } }
+                    },
+                    plugins: { legend: { labels: { color: '#e2e8f0' } } }
+                }
+            });
+
+            // Doughnut Chart
+            const ctxDoughnut = document.getElementById('vectorDoughnutChart').getContext('2d');
+            new Chart(ctxDoughnut, {
+                type: 'doughnut',
+                data: {
+                    labels: ['SQLi', 'XSS', 'RCE', 'DDoS', 'Brute Force'],
+                    datasets: [{
+                        data: [30, 25, 15, 10, 20],
+                        backgroundColor: ['#FF3366', '#00F0FF', '#FFB800', '#00FF41', '#A855F7'],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: 'right', labels: { color: '#e2e8f0' } } }
+                }
+            });
+        }
+
+        // --- 7. Initialization ---
+        document.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+            
+            // Populate data
+            initAgentGrid();
+            initHexGrid();
+            
+            // Populate initial logs
+            for(let i=0; i<5; i++) addLogEntry(threats[i]);
+            
+            // Start charts
+            initCharts();
+
+            // Clock
+            setInterval(() => {
+                document.getElementById('current-time').innerText = new Date().toISOString().split('T')[1].split('.')[0] + ' UTC';
+            }, 1000);
+
+            // Hover Sound effects for buttons
+            document.querySelectorAll('button').forEach(btn => {
+                btn.addEventListener('mouseenter', () => playSound('hover'));
+            });
+
+            // Simulate random background activity
+            setInterval(() => {
+                if(Math.random() > 0.7) {
+                    const t = threats[Math.floor(Math.random() * threats.length)];
+                    // Add silently to log occasionally or just flash dot
+                    // console.log("Background activity...");
+                }
+            }, 5000);
+        });
+
+    </script>
+</body>
+</html>
